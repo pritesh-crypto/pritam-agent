@@ -131,7 +131,8 @@ app.get("/api/stats", (req, res) => {
 
 // ─── Start server ─────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+console.log("ENV PORT IS:", process.env.PORT);
+app.listen(PORT, "0.0.0.0", () => {
   logger.info(`\n🏠 Pritam Property Agent is LIVE on port ${PORT}`);
   logger.info(`📡 Webhook URL: ${process.env.WEBHOOK_URL || `http://localhost:${PORT}`}/webhook`);
   logger.info(`👑 Owner phone: ${OWNER_PHONE}`);
