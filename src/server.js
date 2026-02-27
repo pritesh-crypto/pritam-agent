@@ -64,6 +64,9 @@ app.post("/webhook", async (req, res) => {
 
 // ─── Admin REST API ───────────────────────────────────────────────────────────
 
+// Root
+app.get("/", (req, res) => res.json({ status: "ok", agent: "Pritam" }));
+
 // Health check
 app.get("/health", (req, res) => {
   res.json({ status: "ok", agent: "Pritam", time: new Date().toISOString() });
