@@ -136,7 +136,7 @@ async function handleBuyerMessage(phone, text, buyerName) {
   let reply;
   try {
     response = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-3-haiku-20240307",
       max_tokens: 600,
       system: buildBuyerSystemPrompt(lead),
       messages
@@ -173,7 +173,7 @@ async function handleOwnerMessage(text) {
   let response;
   try {
     response = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-3-haiku-20240307",
       max_tokens: 800,
       system: OWNER_LEARNING_SYSTEM,
       messages: [{ role: "user", content: text }]
@@ -295,7 +295,7 @@ async function startOutreach(lead) {
 
   try {
     response = await anthropic.messages.create({
-      model: "claude-3-5-sonnet-20241022",
+      model: "claude-3-haiku-20240307",
       max_tokens: 200,
       system: buildBuyerSystemPrompt(lead),
       messages: [{
