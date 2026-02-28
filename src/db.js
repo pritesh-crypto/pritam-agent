@@ -1,125 +1,119 @@
-// db.js — Simple JSON database for leads + conversations
-const path = require("path");
-const fs = require("fs");
+const { MongoClient } = require("mongodb");
+const logger = require("./logger");
 
-const DB_PATH = path.join(__dirname, "../data/db.json");
+const MONGODB_URL = process.env.MONGODB_URL;
+let db;
 
-// Ensure data dir and file exist
-function ensureDb() {
-  const dir = path.dirname(DB_PATH);
-  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-  if (!fs.existsSync(DB_PATH)) {
-    fs.writeFileSync(DB_PATH, JSON.stringify({
-      leads: [],
-      conversations: {},
-      appointments: [],
-      ownerNotes: [],
-      dailyStats: []
-    }, null, 2));
+async function getDb() {
+  if (!db) {
+    const client = new MongoClient(MONGODB_URL);
+    await client.connect();
+    db = client.db("pritam");
+    logger.info("✅ MongoDB connected");
   }
+  return db;
 }
 
-function read() {
-  ensureDb();
-  return JSON.parse(fs.readFileSync(DB_PATH, "utf8"));
+async function getLead(phone) {
+  const db = await getDb();
+  return db.collection("leads").findOne({ phone });
 }
 
-function write(data) {
-  fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
-}
-
-// ─── Leads ────────────────────────────────────────────────────────────────────
-
-function getAllLeads() {
-  return read().leads;
-}
-
-function getLead(phone) {
-  const { leads } = read();
-  return leads.find(l => l.phone === phone) || null;
-}
-
-function upsertLead(phone, updates) {
-  const db = read();
-  const idx = db.leads.findIndex(l => l.phone === phone);
-  const now = new Date().toISOString();
-
-  if (idx === -1) {
-    db.leads.push({ phone, createdAt: now, updatedAt: now, ...updates });
-  } else {
-    db.leads[idx] = { ...db.leads[idx], ...updates, updatedAt: now };
-  }
-  write(db);
+async function upsertLead(phone, data) {
+  const db = await getDb();
+  await db.collection("leads").updateOne(
+    { phone },
+    { $set: { ...data, phone, updatedAt: new Date().toISOString() }, $setOnInsert: { createdAt: new Date().toISOString() } },
+    { upsert: true }
+  );
   return getLead(phone);
 }
 
-function getHotLeads(limit = 10) {
-  const { leads } = read();
-  return leads
-    .filter(l => l.stage !== "dead" && l.stage !== "sold" && !l.outreachSentToday)
-    .sort((a, b) => (b.score || 0) - (a.score || 0))
-    .slice(0, limit);
+async function getAllLeads() {
+  const db = await getDb();
+  return db.collection("leads").find().toArray();
 }
 
-function getTodayLeadsCount() {
-  const { leads } = read();
-  const today = new Date().toDateString();
-  return leads.filter(l => l.outreachDate && new Date(l.outreachDate).toDateString() === today).length;
+async function addMessage(phone, role, content) {
+  const db = await getDb();
+  await db.collection("messages").insertOne({ phone, role, content, createdAt: new Date().toISOString() });
 }
 
-// ─── Conversations ────────────────────────────────────────────────────────────
-
-function getConversation(phone) {
-  const db = read();
-  return db.conversations[phone] || [];
+async function getConversation(phone) {
+  const db = await getDb();
+  return db.collection("messages").find({ phone }).sort({ createdAt: 1 }).limit(20).toArray();
 }
 
-function addMessage(phone, role, text) {
-  const db = read();
-  if (!db.conversations[phone]) db.conversations[phone] = [];
-  db.conversations[phone].push({
-    role,            // "user" | "assistant"
-    content: text,
-    timestamp: new Date().toISOString()
-  });
-  // Keep last 40 messages per conversation to control token usage
-  if (db.conversations[phone].length > 40) {
-    db.conversations[phone] = db.conversations[phone].slice(-40);
+async function addAppointment(data) {
+  const db = await getDb();
+  await db.collection("appointments").insertOne({ ...data
+
+cat > src/knowledge.js << 'EOF'
+const { MongoClient } = require("mongodb");
+const logger = require("./logger");
+
+const MONGODB_URL = process.env.MONGODB_URL;
+let db;
+
+async function getDb() {
+  if (!db) {
+    const client = new MongoClient(MONGODB_URL);
+    await client.connect();
+    db = client.db("pritam");
   }
-  write(db);
+  return db;
 }
 
-// ─── Appointments ─────────────────────────────────────────────────────────────
-
-function addAppointment(appointment) {
-  const db = read();
-  db.appointments.push({ ...appointment, id: Date.now(), createdAt: new Date().toISOString() });
-  write(db);
+async function getKnowledge() {
+  const db = await getDb();
+  const doc = await db.collection("knowledge").findOne({ _id: "main" });
+  return doc || { facts: {}, ownerMessages: [], media: [], instructions: [] };
 }
 
-function getAppointments() {
-  return read().appointments;
+async function saveKnowledge(k) {
+  const db = await getDb();
+  await db.collection("knowledge").updateOne(
+    { _id: "main" },
+    { $set: { ...k, updatedAt: new Date().toISOString() } },
+    { upsert: true }
+  );
 }
 
-// ─── Owner Notes (when agent escalates to Pritesh) ───────────────────────────
-
-function addOwnerNote(note) {
-  const db = read();
-  db.ownerNotes.push({ ...note, id: Date.now(), timestamp: new Date().toISOString() });
-  write(db);
+async function addOwnerMessage(text, facts) {
+  const k = await getKnowledge();
+  k.facts = { ...k.facts, ...facts };
+  k.ownerMessages = k.ownerMessages || [];
+  k.ownerMessages.push({ text, facts, at: new Date().toISOString() });
+  await saveKnowledge(k);
 }
 
-// ─── Daily Stats ──────────────────────────────────────────────────────────────
-
-function recordDailyStat(stat) {
-  const db = read();
-  db.dailyStats.push({ ...stat, date: new Date().toISOString() });
-  write(db);
+async function addOwnerInstruction(instruction) {
+  const k = await getKnowledge();
+  k.instructions = k.instructions || [];
+  k.instructions.push(instruction);
+  await saveKnowledge(k);
 }
 
-module.exports = {
-  getAllLeads, getLead, upsertLead, getHotLeads, getTodayLeadsCount,
-  getConversation, addMessage,
-  addAppointment, getAppointments,
-  addOwnerNote, recordDailyStat
-};
+async function addMedia(text, type) {
+  const k = await getKnowledge();
+  k.media = k.media || [];
+  k.media.push({ text, type, at: new Date().toISOString() });
+  await saveKnowledge(k);
+}
+
+async function isKnowledgeEmpty() {
+  const k = await getKnowledge();
+  return !k.ownerMessages || k.ownerMessages.length === 0;
+}
+
+async function buildKnowledgeBlock() {
+  const k = await getKnowledge();
+  if (!k.ownerMessages || k.ownerMessages.length === 0) {
+    return "PROPERTY KNOWLEDGE: Not yet provided. Ask owner for details.";
+  }
+  const facts = Object.entries(k.facts || {}).map(([key, val]) => `- ${key}: ${val}`).join("\n");
+  const instructions = (k.instructions || []).map(i => `- ${i}`).join("\n");
+  return `PROPERTY KNOWLEDGE:\n${facts}\n\nOWNER INSTRUCTIONS:\n${instructions || "None yet"}`;
+}
+
+module.exports = { getKnowledge, addOwnerMessage, addOwnerInstruction, addMedia, isKnowledgeEmpty, buildKnowledgeBlock };
