@@ -170,6 +170,7 @@ async function handleOwnerMessage(text) {
   logger.info(`👑 Owner: ${text}`);
 
   let parsed;
+  let response;
   try {
     const response = await anthropic.messages.create({
       model: "claude-sonnet-4-6",
