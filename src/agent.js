@@ -181,7 +181,7 @@ async function handleOwnerMessage(text) {
 
     const raw = response.content[0].text.trim()
       .replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
-    parsed = JSON.parse(raw);
+    try { parsed = JSON.parse(raw); } catch { parsed = { type: "other", facts: {}, confirmationMessage: raw.substring(0, 100) }; }
   } catch (err) {
 logger.error("Owner message parse error:", JSON.stringify(err?.status || err?.message || err));
     
