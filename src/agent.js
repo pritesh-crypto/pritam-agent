@@ -136,7 +136,7 @@ async function handleBuyerMessage(phone, text, buyerName) {
   let reply;
   try {
     const response = await anthropic.messages.create({
-      model: "claude-opus-4-5-20251101",
+      model: "claude-sonnet-4-6",
       max_tokens: 600,
       system: buildBuyerSystemPrompt(lead),
       messages
@@ -172,7 +172,7 @@ async function handleOwnerMessage(text) {
   let parsed;
   try {
     const response = await anthropic.messages.create({
-      model: "claude-opus-4-5-20251101",
+      model: "claude-sonnet-4-6",
       max_tokens: 800,
       system: OWNER_LEARNING_SYSTEM,
       messages: [{ role: "user", content: text }]
@@ -293,7 +293,7 @@ async function startOutreach(lead) {
 
   try {
     const response = await anthropic.messages.create({
-      model: "claude-opus-4-5-20251101",
+      model: "claude-sonnet-4-6",
       max_tokens: 200,
       system: buildBuyerSystemPrompt(lead),
       messages: [{
