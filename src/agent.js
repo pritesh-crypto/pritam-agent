@@ -1,4 +1,4 @@
-// agent.js — Pritam's brain. Powered by Claude.
+— Pritam's brain. Powered by Claude.
 // Property knowledge comes entirely from owner WhatsApp messages — no config files.
 require("dotenv").config();
 const Anthropic = require("@anthropic-ai/sdk");
@@ -183,7 +183,8 @@ async function handleOwnerMessage(text) {
       .replace(/^```json\s*/i, "").replace(/^```\s*/i, "").replace(/\s*```$/i, "").trim();
     parsed = JSON.parse(raw);
   } catch (err) {
-    logger.error("Owner message parse error:", err.message, "RAW:", response?.content?.[0]?.text);
+logger.error("Owner message parse error:", JSON.stringify(err?.status || err?.message || err));
+    
     await sendMessage(OWNER_PHONE, "Got it, noted! 🙏");
     return;
   }
