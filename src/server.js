@@ -73,8 +73,8 @@ app.get("/health", (req, res) => {
 });
 
 // Get all leads
-app.get("/api/leads", (req, res) => {
-  const leads = db.getAllLeads();
+app.get("/api/leads", async (req, res) => {
+  const leads = await db.getAllLeads();
   res.json({ count: leads.length, leads });
 });
 
@@ -89,14 +89,14 @@ app.post("/api/leads", async (req, res) => {
 });
 
 // Get conversation with a lead
-app.get("/api/leads/:phone/conversation", (req, res) => {
-  const conversation = db.getConversation(req.params.phone);
+app.get("/api/leads/:phone/conversation", async (req, res) => {
+  const conversation = await db.getConversation(req.params.phone);
   res.json({ phone: req.params.phone, messages: conversation });
 });
 
 // Manually trigger outreach to a specific lead
 app.post("/api/leads/:phone/outreach", async (req, res) => {
-  const lead = db.getLead(req.params.phone);
+  const lead = await db.getLead(req.params.phone);
   if (!lead) return res.status(404).json({ error: "Lead not found" });
 
   const success = await agent.startOutreach(lead);
@@ -104,8 +104,8 @@ app.post("/api/leads/:phone/outreach", async (req, res) => {
 });
 
 // Get all appointments
-app.get("/api/appointments", (req, res) => {
-  res.json({ appointments: db.getAppointments() });
+app.get("/api/appointments", async (req, res) => {
+  res.json({ appointments: await db.getAppointments() });
 });
 
 // Trigger daily outreach manually (for testing)
@@ -116,8 +116,8 @@ app.post("/api/run-outreach", async (req, res) => {
 });
 
 // Get stats
-app.get("/api/stats", (req, res) => {
-  const leads = db.getAllLeads();
+app.get("/api/stats", async (req, res) => {
+  const leads = await db.getAllLeads();
   res.json({
     total: leads.length,
     byStage: {
@@ -128,7 +128,7 @@ app.get("/api/stats", (req, res) => {
       appointment: leads.filter(l => l.stage === "appointment").length,
       dead: leads.filter(l => l.stage === "dead").length,
     },
-    appointments: db.getAppointments().length
+    appointments: (await db.getAppointments()).length
   });
 });
 
