@@ -1,4 +1,4 @@
-— Pritam's brain. Powered by Claude.
+// — Pritam's brain. Powered by Claude.
 // Property knowledge comes entirely from owner WhatsApp messages — no config files.
 require("dotenv").config();
 const Anthropic = require("@anthropic-ai/sdk");
