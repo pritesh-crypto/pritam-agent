@@ -185,7 +185,7 @@ async function handleOwnerMessage(text) {
   } catch (err) {
 logger.error("Owner message parse error:", JSON.stringify(err?.status || err?.message || err));
     
-    await sendMessage(OWNER_PHONE, "Error: " + JSON.stringify(err?.status || err?.message || String(err)));
+    await sendMessage(OWNER_PHONE, "Error: " + (err?.message || JSON.stringify(err?.error || err)));
     return;
   }
 
